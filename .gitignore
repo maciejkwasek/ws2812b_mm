@@ -1,0 +1,102 @@
+######################################
+# Quartus Prime – katalogi generowane
+######################################
+
+/db/
+/incremental_db/
+/qdb/
+/output_files/
+/simulation/
+
+######################################
+# Quartus – pliki robocze / cache
+######################################
+
+*.rpt
+*.summary
+*.smsg
+*.log
+*.chg
+*.bak
+*.old
+*.tmp
+*.autosave
+
+######################################
+# Quartus GUI / sesje
+######################################
+
+*.qws
+*.qpf~
+*.qsf~
+*.qpf.bak
+*.qsf.bak
+
+######################################
+# Questa / ModelSim
+######################################
+
+/work/
+modelsim.ini
+transcript
+vsim.wlf
+wlf*
+*.mpf
+*.mti
+*.vstf
+*.do~
+
+######################################
+# System / edytory
+######################################
+
+# Linux
+*~
+.nfs*
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# VS Code
+.vscode/
+
+# JetBrains
+.idea/
+
+######################################
+# Python
+######################################
+
+__pycache__/
+*.pyc
+
+######################################
+# JAWNIE ZOSTAWIAMY W REPO
+######################################
+
+# HDL
+!/rtl/**/*.vhd
+!/rtl/**/*.v
+!/rtl/**/*.sv
+
+!/tb/**/*.vhd
+!/tb/**/*.v
+!/tb/**/*.sv
+!/tb/**/.gitkeep
+
+# Constrainty
+!/constraints/**/*.sdc
+!/constraints/**/.gitkeep
+
+# Symulacja
+!/sim/**/*.do
+!/sim/**/*.tcl
+!/sim/**/.gitkeep
+
+# Pliki projektu
+!/*.qpf
+!/*.qsf
+
+# Dokumentacja
+!/*.md
