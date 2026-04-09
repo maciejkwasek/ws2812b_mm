@@ -7,6 +7,7 @@
 /qdb/
 /output_files/
 /simulation/
+/.qsys_edit/
 
 ######################################
 # Quartus – pliki robocze / cache
