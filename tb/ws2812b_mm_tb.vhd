@@ -100,7 +100,16 @@ begin
 			mm_readreg(clk, avs_addr, avs_read, avs_readdata, "00000", readdata);
 			exit when readdata(0) = '0';
 		end loop;
-				
+
+		-- brightness update & fire refresh
+		mm_writereg(clk, avs_addr, avs_write, avs_writedata, "00000", x"00007f03");
+
+		loop
+			-- wait for end bufs sync
+			mm_readreg(clk, avs_addr, avs_read, avs_readdata, "00000", readdata);
+			exit when readdata(0) = '0';
+		end loop;
+
 		avs_chipselect <= '0';
 	
 		wait;

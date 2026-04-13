@@ -54,7 +54,7 @@ architecture rtl of ws2812b_mm is
 	type refresh_state_t is (REFRESH_IDLE, REFRESH_BUSY, REFRESH_DONE);
 	signal refresh_state : refresh_state_t := REFRESH_IDLE;
 	
-	signal brightness : natural range 0 to 255 := 255;
+	signal brightness : unsigned(7 downto 0) := (others => '1');
 
 begin
 
@@ -73,7 +73,8 @@ begin
 			pixel_data => pixel_data,
 			pixel_valid => pixel_valid,
 
-			te => te
+			te => te,
+			brightness => brightness
 
 		);
 
@@ -90,11 +91,14 @@ begin
 					addr := to_integer(unsigned(avs_addr));
 					case addr is
 						when CTRLSTAT_REG =>
+
+							-- bit 0 - refresh
 							refresh_req <= avs_writedata(0);
 
-							-- to do if not zero
-							--
-							brightness <= to_integer(unsigned(avs_writedata(15 downto 8)));
+							-- bit 1 - update brightness
+							if avs_writedata(1) = '1' then
+								brightness <= unsigned(avs_writedata(15 downto 8));
+							end if;
 
 						-- leds data
 						when others =>
@@ -130,7 +134,7 @@ begin
 				case addr is
 					when CTRLSTAT_REG =>
 						avs_readdata(0) <= refresh_req;
-						avs_readdata(15 downto 8) <= std_logic_vector(to_unsigned(brightness, 8));
+						avs_readdata(15 downto 8) <= std_logic_vector(brightness);
 						avs_readdata(27 downto 16) <= std_logic_vector(to_unsigned(LED_NUMBER, 12));
 
 					when others =>

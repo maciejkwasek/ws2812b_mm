@@ -36,7 +36,9 @@ entity ws2812b_drv is
 		pixel_data: in pixel_color_t;
 		pixel_valid : in std_logic;
 
-		te : out std_logic
+		te : out std_logic;
+
+		brightness : unsigned(7 downto 0)
 	);
 end entity;
 
@@ -61,6 +63,31 @@ architecture rtl of ws2812b_drv is
 		 end loop;
 
 		 return tmp;
+	end function;
+
+	-- apply brightness setting on pixel color
+	function brightnessCorrection(
+		pixel : pixel_color_t;
+		brightness : unsigned(7 downto 0)
+	) return pixel_color_t is
+
+		variable result : pixel_color_t := (others => '0');
+		variable r : unsigned(15 downto 0) := (others => '0');
+		variable g : unsigned(15 downto 0) := (others => '0');
+		variable b : unsigned(15 downto 0) := (others => '0');
+
+	begin
+
+		-- should be 255 but x2 LE - 256 is aprox and is good enough
+		r := unsigned(pixel(7 downto 0)) * brightness / 256;
+		g := unsigned(pixel(15 downto 8)) * brightness / 256;
+		b := unsigned(pixel(23 downto 16)) * brightness / 256;
+
+		result(23 downto 16) := std_logic_vector(r(7 downto 0));
+		result(15 downto 8) := std_logic_vector(g(7 downto 0));
+		result(7 downto 0) := std_logic_vector(b(7 downto 0));
+
+		return result;
 	end function;
 
 	signal frame_buffer : frame_buffer_t(0 to LED_NUMBER-1) := init_frame;
@@ -144,7 +171,7 @@ begin
 					end if;
 					
 				when LOAD_PIXEL =>
-					pixel_reg <= frame_buffer(led_idx);
+					pixel_reg <= brightnessCorrection(frame_buffer(led_idx), brightness);
 					c_state <= LOAD_BIT;
 
 				when ALIGN_LOAD_BIT =>
