@@ -93,7 +93,9 @@ begin
 						when CTRLSTAT_REG =>
 
 							-- bit 0 - refresh
-							refresh_req <= avs_writedata(0);
+							if avs_writedata(0) = '1' then
+								refresh_req <= '1';
+							end if;
 
 							-- bit 1 - update brightness
 							if avs_writedata(1) = '1' then
