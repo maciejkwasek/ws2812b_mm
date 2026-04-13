@@ -5,6 +5,9 @@ use ieee.numeric_std.all;
 library work;
 use work.ws2812b_pkg.all;
 
+--
+--
+--
 entity ws2812b_drv is
 	generic
 	(
@@ -42,55 +45,12 @@ entity ws2812b_drv is
 	);
 end entity;
 
+--
+--
+--
 architecture rtl of ws2812b_drv is
 
-	-- led test pattern
-	function init_frame return frame_buffer_t is
-		 variable tmp : frame_buffer_t(0 to LED_NUMBER-1);
-		 constant RED   : std_logic_vector(COLOR_NUM_BITS-1 downto 0) := x"000f00";
-		 constant GREEN : std_logic_vector(COLOR_NUM_BITS-1 downto 0) := x"0f0000";
-		 constant BLUE  : std_logic_vector(COLOR_NUM_BITS-1 downto 0) := x"00000f";
-	begin
-		 for i in 0 to LED_NUMBER-1 loop
-			  case i mod 3 is
-					when 0 =>
-						 tmp(i) := RED;
-					when 1 =>
-						 tmp(i) := GREEN;
-					when others =>
-						 tmp(i) := BLUE;
-			  end case;
-		 end loop;
-
-		 return tmp;
-	end function;
-
-	-- apply brightness setting on pixel color
-	function brightnessCorrection(
-		pixel : pixel_color_t;
-		brightness : unsigned(7 downto 0)
-	) return pixel_color_t is
-
-		variable result : pixel_color_t := (others => '0');
-		variable r : unsigned(15 downto 0) := (others => '0');
-		variable g : unsigned(15 downto 0) := (others => '0');
-		variable b : unsigned(15 downto 0) := (others => '0');
-
-	begin
-
-		-- should be 255 but x2 LE - 256 is aprox and is good enough
-		r := unsigned(pixel(7 downto 0)) * brightness / 256;
-		g := unsigned(pixel(15 downto 8)) * brightness / 256;
-		b := unsigned(pixel(23 downto 16)) * brightness / 256;
-
-		result(23 downto 16) := std_logic_vector(r(7 downto 0));
-		result(15 downto 8) := std_logic_vector(g(7 downto 0));
-		result(7 downto 0) := std_logic_vector(b(7 downto 0));
-
-		return result;
-	end function;
-
-	signal frame_buffer : frame_buffer_t(0 to LED_NUMBER-1) := init_frame;
+	type gamma_table_t is array (0 to 255) of std_logic_vector(7 downto 0);
 
 	type drv_state_t is
 	(
@@ -104,23 +64,6 @@ architecture rtl of ws2812b_drv is
 		BIT_H,
 		BIT_L
 	);
-	
-	signal c_state : drv_state_t := IDLE;
-	signal delay_cnt : natural := 0;
-	
-	signal bit_idx : natural := 0;
-	signal led_idx : natural := 0;
-	
-	signal high_pulse_limit : natural := 0;
-	signal low_pulse_limit : natural := 0;
-	
-	signal pixel_raw : pixel_color_t;
-	signal pixel_gamma : pixel_color_t;
-	signal pixel_reg : pixel_color_t;
-
-	signal pixel_idx : natural := 0;
-
-	type gamma_table_t is array (0 to 255) of std_logic_vector(7 downto 0);
 
 	constant gamma22_lut : gamma_table_t :=
 	(
@@ -163,6 +106,51 @@ architecture rtl of ws2812b_drv is
 		others=>x"FF"
 	);
 
+	-- led test pattern
+	function init_frame return frame_buffer_t is
+		 variable tmp : frame_buffer_t(0 to LED_NUMBER-1);
+		 constant RED   : std_logic_vector(COLOR_NUM_BITS-1 downto 0) := x"000f00";
+		 constant GREEN : std_logic_vector(COLOR_NUM_BITS-1 downto 0) := x"0f0000";
+		 constant BLUE  : std_logic_vector(COLOR_NUM_BITS-1 downto 0) := x"00000f";
+	begin
+		 for i in 0 to LED_NUMBER-1 loop
+			  case i mod 3 is
+					when 0 =>
+						 tmp(i) := RED;
+					when 1 =>
+						 tmp(i) := GREEN;
+					when others =>
+						 tmp(i) := BLUE;
+			  end case;
+		 end loop;
+
+		 return tmp;
+	end function;
+
+	-- apply brightness setting on pixel color
+	function brightnessCorrection(
+		pixel : pixel_color_t;
+		brightness : unsigned(7 downto 0)
+	) return pixel_color_t is
+
+		variable result : pixel_color_t := (others => '0');
+		variable r : unsigned(15 downto 0) := (others => '0');
+		variable g : unsigned(15 downto 0) := (others => '0');
+		variable b : unsigned(15 downto 0) := (others => '0');
+
+	begin
+		-- should be 255 but x2 LE - 256 is aprox and is good enough
+		r := unsigned(pixel(7 downto 0)) * brightness / 256;
+		g := unsigned(pixel(15 downto 8)) * brightness / 256;
+		b := unsigned(pixel(23 downto 16)) * brightness / 256;
+
+		result(23 downto 16) := std_logic_vector(r(7 downto 0));
+		result(15 downto 8) := std_logic_vector(g(7 downto 0));
+		result(7 downto 0) := std_logic_vector(b(7 downto 0));
+
+		return result;
+	end function;
+
 	-- apply gamma correction
 	function gammaCorrection(pixel: pixel_color_t)
 		return pixel_color_t is
@@ -172,7 +160,6 @@ architecture rtl of ws2812b_drv is
 		variable g : unsigned(7 downto 0) := (others => '0');
 		variable b : unsigned(7 downto 0) := (others => '0');
 	begin
-
 		r := unsigned(pixel(7 downto 0));
 		g := unsigned(pixel(15 downto 8));
 		b := unsigned(pixel(23 downto 16));
@@ -182,8 +169,24 @@ architecture rtl of ws2812b_drv is
 		result(23 downto 16) := gamma22_lut(to_integer(b));
 
 		return result;
-
 	end function;
+
+	signal frame_buffer : frame_buffer_t(0 to LED_NUMBER-1) := init_frame;
+
+	signal c_state : drv_state_t := IDLE;
+	signal delay_cnt : natural := 0;
+
+	signal bit_idx : natural := 0;
+	signal led_idx : natural := 0;
+
+	signal high_pulse_limit : natural := 0;
+	signal low_pulse_limit : natural := 0;
+
+	signal pixel_raw : pixel_color_t;
+	signal pixel_gamma : pixel_color_t;
+	signal pixel_reg : pixel_color_t;
+
+	signal pixel_idx : natural := 0;
 
 begin
 

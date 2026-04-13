@@ -6,6 +6,9 @@ library work;
 use work.ws2812b_pkg.all;
 use work.utils_pkg.all;
 
+--
+--
+--
 entity ws2812b_mm is
 
 	generic
@@ -33,7 +36,12 @@ entity ws2812b_mm is
 	);
 end entity;
 
+--
+--
+--
 architecture rtl of ws2812b_mm is
+
+	type refresh_state_t is (REFRESH_IDLE, REFRESH_BUSY, REFRESH_DONE);
 
 	constant CTRLSTAT_REG : natural := 16#00#;	
 	constant FB_OFFSET : natural := 16#10#;
@@ -50,8 +58,6 @@ architecture rtl of ws2812b_mm is
 	signal refresh_req : std_logic := '0';
 	signal refresh_ack : std_logic := '0';
 
-	
-	type refresh_state_t is (REFRESH_IDLE, REFRESH_BUSY, REFRESH_DONE);
 	signal refresh_state : refresh_state_t := REFRESH_IDLE;
 	
 	signal brightness : unsigned(7 downto 0) := (others => '1');
